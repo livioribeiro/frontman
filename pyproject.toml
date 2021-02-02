@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "frontman"
-version = "0.1.1"
+version = "0.1.2"
 description = "Frontend libraries manager"
 authors = ["Livio Ribeiro <livioribeiro@outlook.com>"]
 license = "MIT"
@@ -11,7 +11,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.6"
 requests = "^2.25.1"
 pydantic = "^1.7.3"
 typer = { version = "^0.3.2", extras = ["all"] }
