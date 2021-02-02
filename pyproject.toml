@@ -2,9 +2,13 @@
 name = "frontman"
 version = "0.1.0"
 description = "Frontend libraries manager"
-authors = ["Livio Ribeiro"]
+authors = ["Livio Ribeiro <livioribeiro@outlook.com>"]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/livioribeiro/frontman"
+packages = [
+    { include = "frontman", from = "src" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"

@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel
 
-from .provider import ProviderEnum
+from .provider import Provider
 
 
 class PackageFile(BaseModel):
@@ -16,12 +16,12 @@ class Package(BaseModel):
     name: str
     version: str
     path: Optional[Path]
-    files: List[Union[str, PackageFile]]
     destination: Optional[Path]
-    provider: Optional[ProviderEnum]
+    provider: Optional[Provider]
+    files: List[Union[str, PackageFile]]
 
 
 class Manifest(BaseModel):
-    provider: ProviderEnum = ProviderEnum.CDNJS
+    provider: Provider
     destination: Path
     packages: List[Package]

@@ -10,7 +10,8 @@ import frontman.process
 CWD = Path(os.getcwd())
 
 DEFAULT_MANIFEST = Path('frontman.json')
-DEFAULT_THREADS = os.cpu_count() * 2
+DEFAULT_MAX_CONCURRENCY = 8
+DEFAULT_CONCURRENCY = min(os.cpu_count() * 2, DEFAULT_MAX_CONCURRENCY)
 
 
 app = typer.Typer(name='FrontMan')
@@ -28,41 +29,47 @@ def failure(file: str, ex: Exception):
 
 @app.command()
 def main(
-        manifest: Path = typer.Option(DEFAULT_MANIFEST, help='Path to manifest file'),
-        threads: int = typer.Option(DEFAULT_THREADS, help='Number of threads to use'),
+        manifest_file: Path = typer.Argument(
+            DEFAULT_MANIFEST,
+            help='Path to manifest file'
+        ),
+        concurrency: int = typer.Option(
+            DEFAULT_CONCURRENCY,
+            "--concurrency",
+            "-c",
+            help='Number of threads used to download files'
+        ),
 ):
-    """Manage frontend dependencies"""
-    if manifest is not None:
-        if not manifest.exists():
+    """Frontend Library Manager"""
+
+    if manifest_file is not None:
+        if not manifest_file.exists():
             typer.echo('given manifest does not exist', err=True)
             raise typer.Exit(code=1)
-        if not manifest.is_file():
+        if not manifest_file.is_file():
             typer.echo('given manifest is not a file', err=True)
             raise typer.Exit(code=1)
 
-        manifest_path = manifest.resolve()
+        manifest_path = manifest_file.resolve()
     else:
-        manifest_path = Path().resolve() / 'frontman.json'
+        manifest_path = CWD / 'frontman.json'
         if not manifest_path.exists() or not manifest_path.is_file():
-            typer.echo('not manifest found in current directory', err=True)
+            typer.echo('manifest not found in current directory', err=True)
             raise typer.Exit(code=1)
 
     try:
-        with open(manifest_path, 'r') as manifest_file:
-            manifest_data = json.load(manifest_file)
-        manifest = Manifest.parse_obj(manifest_data)
+        with open(manifest_path, 'r') as file:
+            manifest_data = json.load(file)
+        manifest_file = Manifest.parse_obj(manifest_data)
     except Exception as e:
         typer.echo(f'failed to parse manifest: {e}', err=True)
         raise typer.Exit(code=1)
 
     root_path = manifest_path.parent
-    file_list = frontman.process.generate_file_list(root_path, manifest)
-    frontman.process.download_concurrent(threads, file_list, success, failure)
+    file_list = frontman.process.generate_file_list(root_path, manifest_file)
+    frontman.process.download_concurrent(
+        concurrency, file_list, success, failure)
 
 
 def run():
     typer.run(main)
-
-
-if __name__ == '__main__':
-    run()

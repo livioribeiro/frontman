@@ -4,18 +4,15 @@ import threading
 from typing import Callable, Tuple, Iterable, Optional
 
 from .schema import Manifest, PackageFile
-from .provider import get_provider
 
 import requests
-
-MAX_THREAD = 4
 
 
 def generate_file_list(root_path: Path, manifest: Manifest) -> Iterable[Tuple[str, Path]]:
     base_path = root_path / manifest.destination
 
     for package in manifest.packages:
-        provider = get_provider(package.provider or manifest.provider)
+        provider = package.provider or manifest.provider
 
         destination = base_path / (package.destination or '')
         name = package.name
