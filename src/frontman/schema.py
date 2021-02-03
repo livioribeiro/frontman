@@ -8,7 +8,7 @@ from .provider import Provider
 
 class PackageFile(BaseModel):
     name: str
-    destination: Optional[Path] = Path('')
+    destination: Optional[Path] = Path("")
     rename: Optional[str]
 
 

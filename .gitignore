@@ -1,6 +1,5 @@
-_pycache__/
+__pycache__/
 *.py[cod]
-*$py.class
 dist/
 .venv
 
