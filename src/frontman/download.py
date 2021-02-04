@@ -1,4 +1,3 @@
-import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Iterable, Optional, Tuple
@@ -32,27 +31,23 @@ def download_file(
 
 
 def download_concurrent(
-    num_threads: int,
     file_list: Iterable[Tuple[str, Path]],
-    upgrade: bool,
+    force: bool,
+    concurrency: Optional[int] = None,
 ) -> Iterable[Result]:
 
-    executor = ThreadPoolExecutor(max_workers=num_threads)
+    executor = ThreadPoolExecutor(max_workers=concurrency)
     session = requests.Session()
 
     def worker(item: Tuple[str, Path]):
         src, dest = item
 
-        if dest.exists() and not upgrade:
+        if dest.exists() and not force:
             return Result(Status.SKIP, src, dest)
 
         try:
-            upgraded = dest.exists()
             download_file(src, dest, session)
-            if upgraded:
-                result = Result(Status.UPGRADE, src, dest)
-            else:
-                result = Result(Status.NEW, src, dest)
+            result = Result(Status.OK, src, dest)
         except Exception as e:
             result = Result(Status.ERROR, src, None, e)
 

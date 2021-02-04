@@ -5,10 +5,9 @@ from typing import Optional
 
 
 class Status(Enum):
-    NEW = 1
-    UPGRADE = 2
+    OK = 1
+    SKIP = 2
     ERROR = 3
-    SKIP = 4
 
 
 @dataclass

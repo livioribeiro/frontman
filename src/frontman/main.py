@@ -1,6 +1,6 @@
 import json
-import os
 from pathlib import Path
+from typing import Optional
 
 import typer
 from typer.colors import BLUE, CYAN, GREEN, RED
@@ -10,18 +10,14 @@ from frontman.process import generate_file_list
 from frontman.result import Result, Status
 from frontman.schema import Manifest
 
-CWD = Path.cwd()
+CURRENT_DIR = Path.cwd()
 
-DEFAULT_MANIFEST = Path("frontman.json")
-DEFAULT_MAX_CONCURRENCY = 8
-DEFAULT_CONCURRENCY = min(os.cpu_count() * 2, DEFAULT_MAX_CONCURRENCY)
-DEFAULT_UPDATE = False
+DEFAULT_MANIFEST = Path("./frontman.json")
 
 STATUS_STYLE = {
-    Status.NEW: typer.style(f"{'NEW':<8}", fg=GREEN, bold=True),
-    Status.UPGRADE: typer.style(f"{'UPGRADE':<8}", fg=BLUE, bold=True),
-    Status.SKIP: typer.style(f"{'SKIP':<8}", fg=CYAN, bold=True),
-    Status.ERROR: typer.style(f"{'ERROR':<8}", fg=RED, bold=True),
+    Status.OK: typer.style(f"{'OK':<5}", fg=GREEN, bold=True),
+    Status.SKIP: typer.style(f"{'SKIP':<5}", fg=CYAN, bold=True),
+    Status.ERROR: typer.style(f"{'ERR':<5}", fg=RED, bold=True),
 }
 
 app = typer.Typer(name="frontman")
@@ -39,57 +35,65 @@ def log_result(result: Result):
     if result.status == Status.ERROR:
         output = f"{src}: {result.error}"
     else:
-        output = f"{src} -> {dest.relative_to(CWD)}"
+        output = f"{src} -> {dest.relative_to(CURRENT_DIR)}"
 
     status = STATUS_STYLE[result.status]
 
     typer.echo(status + output)
 
 
+def manifest_callback(value: Path):
+    if not value.name.endswith(".json"):
+        raise typer.BadParameter("Manifest must be in JSON format.")
+
+    if not value.exists():
+        raise typer.BadParameter(f"Manifest file '{value}' does not exist.")
+
+    if value.is_dir():
+        raise typer.BadParameter("Manifest must be a file.")
+
+    return value.resolve()
+
+
+def concurrency_callback(value: Optional[int]):
+    if value is not None and value < 1:
+        raise typer.BadParameter("Value must be greater than 0.")
+
+    return value
+
+
 @app.command(name="install")
 def install(
     manifest_file: Path = typer.Argument(
-        DEFAULT_MANIFEST, help="Path to manifest file"
+        DEFAULT_MANIFEST,
+        help="Path to manifest file",
+        callback=manifest_callback,
     ),
-    concurrency: int = typer.Option(
-        DEFAULT_CONCURRENCY,
+    concurrency: Optional[int] = typer.Option(
+        None,
         "--concurrency",
         "-c",
-        help="Number of threads used to download files",
+        help="Number of threads used to download files.",
+        callback=concurrency_callback,
     ),
-    upgrade: bool = typer.Option(
-        DEFAULT_UPDATE,
-        "--upgrade",
-        "-U",
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
         help="Whether to download packages that are already downloaded",
+        show_default=False,
     ),
 ):
-    if manifest_file is not None:
-        if not manifest_file.exists():
-            typer.echo("given manifest does not exist", err=True)
-            raise typer.Exit(code=1)
-        if not manifest_file.is_file():
-            typer.echo("given manifest is not a file", err=True)
-            raise typer.Exit(code=1)
-
-        manifest_path = manifest_file.resolve()
-    else:
-        manifest_path = CWD / "frontman.json"
-        if not manifest_path.exists() or not manifest_path.is_file():
-            typer.echo("manifest not found in current directory", err=True)
-            raise typer.Exit(code=1)
-
     try:
-        with open(manifest_path, "r") as file:
+        with open(manifest_file, "r") as file:
             manifest_data = json.load(file)
         manifest = Manifest.parse_obj(manifest_data)
     except Exception as e:
         typer.echo(f"failed to parse manifest: {e}", err=True)
         raise typer.Exit(code=1)
 
-    root_path = manifest_path.parent
+    root_path = manifest_file.parent
     file_list = generate_file_list(root_path, manifest)
-    concurrency = min(concurrency, len(manifest.packages))
 
-    for result in download_concurrent(concurrency, file_list, upgrade):
+    for result in download_concurrent(file_list, force, concurrency):
         log_result(result)

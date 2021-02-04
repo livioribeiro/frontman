@@ -59,16 +59,24 @@ pip install frontman
 2. Execute FrontMan
 
 ```shell
-frontman
+frontman install
 ```
 
 You should see an output like this:
 
 ```
-OK  https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js -> assets/jquery/jquery.min.js
-OK  https://cdn.jsdelivr.net/npm/@popperjs/core@2.6.0/dist/umd/popper.min.js -> assets/popper/popper.js
-OK  https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js -> assets/bootstrap/js/bootstrap.min.js
-OK  https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css -> assets/bootstrap/css/bootstrap.min.css
+OK   https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js -> assets/jquery/jquery.min.js
+OK   https://cdn.jsdelivr.net/npm/@popperjs/core@2.6.0/dist/umd/popper.min.js -> assets/popper/popper.js
+OK   https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js -> assets/bootstrap/js/bootstrap.min.js
+OK   https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css -> assets/bootstrap/css/bootstrap.min.css
+```
+
+## Forcing package download
+
+By default, files that already have been downloaded will be skipped. To force download these files, use the `--force` (or `-f`) flag:
+
+```sh
+frontman install --force
 ```
 
 ## Manifest Format
