@@ -1,0 +1,40 @@
+{
+  "provider": "jsdelivr",
+  "destination": "assets",
+  "packages": [
+    {
+      "name": "jquery",
+      "version": "3.5.1",
+      "provider": "cdnjs",
+      "files": [
+        {
+          "name": "jquery.min.js",
+          "destination": "jquery"
+        }
+      ]
+    },
+    {
+      "name": "@popperjs/core",
+      "version": "2.6.0",
+      "path": "dist/umd",
+      "destination": "popper",
+      "files": [
+        {
+          "name": "popper.min.js",
+          "rename": "popper.js"
+        }
+      ]
+    },
+    {
+      "name": "bootstrap",
+      "version": "4.6.0",
+      "provider": "unpkg",
+      "path": "dist",
+      "destination": "bootstrap",
+      "files": [
+        "js/bootstrap.min.js",
+        "css/bootstrap.min.css"
+      ]
+    }
+  ]
+}

@@ -9,15 +9,15 @@ from .provider import Provider
 class PackageFile(BaseModel):
     name: str
     destination: Path = Path("")
-    rename: Optional[str]
+    rename: Optional[str] = None
 
 
 class Package(BaseModel):
     name: str
     version: str
-    path: Optional[Path]
-    destination: Optional[Path]
-    provider: Optional[Provider]
+    path: Optional[Path] = None
+    destination: Optional[Path] = None
+    provider: Optional[Provider] = None
     files: List[Union[str, PackageFile]]
 
 

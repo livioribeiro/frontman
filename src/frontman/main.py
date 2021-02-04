@@ -1,16 +1,16 @@
 import json
+from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Optional
 
+import pydantic
 import typer
-from typer.colors import BLUE, CYAN, GREEN, RED
+from typer.colors import CYAN, GREEN, RED
 
 from frontman.download import download_concurrent
 from frontman.process import generate_file_list
 from frontman.result import Result, Status
 from frontman.schema import Manifest
-
-CURRENT_DIR = Path.cwd()
 
 DEFAULT_MANIFEST = Path("./frontman.json")
 
@@ -28,14 +28,18 @@ def callback():
     """Frontend Dependency Manager"""
 
 
-def log_result(result: Result):
+def log_result(result: Result, workdir: Path):
+    current_dir = Path.cwd()
     src = result.source
     dest = result.destination
 
     if result.status == Status.ERROR:
         output = f"{src}: {result.error}"
     else:
-        output = f"{src} -> {dest.relative_to(CURRENT_DIR)}"
+        if workdir == current_dir:
+            output = f"{src} -> {dest.relative_to(workdir)}"
+        else:
+            output = f"{src} -> {dest}"
 
     status = STATUS_STYLE[result.status]
 
@@ -43,14 +47,14 @@ def log_result(result: Result):
 
 
 def manifest_callback(value: Path):
-    if not value.name.endswith(".json"):
-        raise typer.BadParameter("Manifest must be in JSON format.")
-
     if not value.exists():
         raise typer.BadParameter(f"Manifest file '{value}' does not exist.")
 
-    if value.is_dir():
-        raise typer.BadParameter("Manifest must be a file.")
+    if not value.is_file():
+        raise typer.BadParameter(f"Given manifest '{value}' must be a file.")
+
+    if not value.name.endswith(".json"):
+        raise typer.BadParameter("Manifest must be in JSON format.")
 
     return value.resolve()
 
@@ -62,9 +66,13 @@ def concurrency_callback(value: Optional[int]):
     return value
 
 
+def workdir_callback(value: Optional[Path]):
+    return value or Path.cwd()
+
+
 @app.command(name="install")
 def install(
-    manifest_file: Path = typer.Argument(
+    manifest_path: Path = typer.Argument(
         DEFAULT_MANIFEST,
         help="Path to manifest file",
         callback=manifest_callback,
@@ -83,17 +91,25 @@ def install(
         help="Whether to download packages that are already downloaded",
         show_default=False,
     ),
+    workdir: Path = typer.Option(
+        None,
+        "--workdir",
+        "-w",
+        help="Download packages relative to the given directory",
+        callback=workdir_callback,
+    ),
 ):
     try:
-        with open(manifest_file, "r") as file:
-            manifest_data = json.load(file)
+        manifest_data = json.loads(manifest_path.read_text())
         manifest = Manifest.parse_obj(manifest_data)
-    except Exception as e:
-        typer.echo(f"failed to parse manifest: {e}", err=True)
+    except JSONDecodeError:
+        typer.echo("Error: Manifest contains invalid JSON", err=True)
+        raise typer.Exit(code=1)
+    except pydantic.ValidationError:
+        typer.echo("Error: Manifest is not in expected format", err=True)
         raise typer.Exit(code=1)
 
-    root_path = manifest_file.parent
-    file_list = generate_file_list(root_path, manifest)
+    file_list = generate_file_list(workdir, manifest)
 
     for result in download_concurrent(file_list, force, concurrency):
-        log_result(result)
+        log_result(result, workdir)

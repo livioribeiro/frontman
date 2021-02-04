@@ -13,7 +13,4 @@ class Provider(str, Enum):
     UNPKG = "unpkg"
 
     def get_file_url(self, package: str, version: str, file: str) -> str:
-        if self.name not in _TEMPLATES:
-            raise TypeError("unknown provider")
-
         return _TEMPLATES[self.name].format(package=package, version=version, file=file)

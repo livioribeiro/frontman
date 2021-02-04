@@ -10,7 +10,7 @@ from .result import Result, Status
 def ensure_destination(destination: Path):
     destination_dir = destination.parent
     if destination_dir.exists() and destination_dir.is_file():
-        raise ValueError(f'"{destination}" is a file')
+        raise ValueError(f"'{destination}' is a file")
 
     if not destination_dir.exists():
         destination_dir.mkdir(mode=0o0755, parents=True, exist_ok=True)
@@ -32,7 +32,7 @@ def download_file(
 
 def download_concurrent(
     file_list: Iterable[Tuple[str, Path]],
-    force: bool,
+    force: bool = False,
     concurrency: Optional[int] = None,
 ) -> Iterable[Result]:
 

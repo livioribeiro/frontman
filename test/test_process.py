@@ -1,55 +1,18 @@
 import json
 from pathlib import Path
 
-from frontman.process import generate_file_list
-from frontman.schema import Manifest
+import pytest
 
-MANIFEST = """{
-  "provider": "jsdelivr",
-  "destination": "assets",
-  "packages": [
-    {
-      "name": "jquery",
-      "version": "3.5.1",
-      "provider": "cdnjs",
-      "files": [
-        {
-          "name": "jquery.min.js",
-          "destination": "jquery"
-        }
-      ]
-    },
-    {
-      "name": "@popperjs/core",
-      "version": "2.6.0",
-      "path": "dist/umd",
-      "destination":"popper",
-      "files": [
-        {
-          "name": "popper.min.js",
-          "rename": "popper.js"
-        }
-      ]
-    },
-    {
-      "name": "bootstrap",
-      "version": "4.6.0",
-      "provider": "unpkg",
-      "path": "dist",
-      "destination": "bootstrap",
-      "files": [
-        "js/bootstrap.min.js",
-        "css/bootstrap.min.css"
-      ]
-    }
-  ]
-}
-"""
+from frontman.process import generate_file_list
+from frontman.provider import Provider
+from frontman.schema import Manifest, Package
 
 
 def test_generate_file_list():
     root_path = Path.cwd()
-    manifest = Manifest.parse_obj(json.loads(MANIFEST))
+    manifest_file = Path(__file__).parent / "frontman.json"
+    manifest_json = json.loads(manifest_file.read_bytes())
+    manifest = Manifest.parse_obj(manifest_json)
 
     file_list = set(generate_file_list(root_path, manifest))
 
@@ -72,3 +35,13 @@ def test_generate_file_list():
             root_path / "assets/bootstrap/css/bootstrap.min.css",
         ),
     }
+
+
+def test_generate_file_list_invalid_package_file_type_should_fail():
+    root_path = Path.cwd()
+    package = Package(name="package", version="version", files=[])
+    package.files.append(Path())
+    manifest = Manifest(provider=Provider.JSDELIVR, destination=root_path, packages=[package])
+
+    with pytest.raises(TypeError):
+        next(generate_file_list(root_path, manifest))

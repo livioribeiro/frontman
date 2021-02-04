@@ -1,0 +1,11 @@
+{
+  "provider": "jsdelivr",
+  "destination": "assets",
+  "packages": [
+    {
+      "name": "invalid",
+      "version": "0.0",
+      "files": ["invalid"]
+    }
+  ]
+}
