@@ -1,10 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, Tuple, Union
 
 import requests
 
-from .result import Result, Status
+from .result import ErrorResult, SuccessResult
 
 
 def ensure_destination(destination: Path):
@@ -34,7 +34,7 @@ def download_concurrent(
     file_list: Iterable[Tuple[str, Path]],
     force: bool = False,
     concurrency: Optional[int] = None,
-) -> Iterable[Result]:
+) -> Iterable[Union[SuccessResult, ErrorResult]]:
 
     executor = ThreadPoolExecutor(max_workers=concurrency)
     session = requests.Session()
@@ -43,15 +43,13 @@ def download_concurrent(
         src, dest = item
 
         if dest.exists() and not force:
-            return Result(Status.SKIP, src, dest)
+            return SuccessResult(src, dest, skip=True)
 
         try:
             download_file(src, dest, session)
-            result = Result(Status.OK, src, dest)
+            return SuccessResult(src, dest)
         except Exception as e:
-            result = Result(Status.ERROR, src, None, e)
-
-        return result
+            return ErrorResult(src, e)
 
     for i in executor.map(worker, file_list):
         yield i

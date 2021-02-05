@@ -1,7 +1,7 @@
 import json
 from json.decoder import JSONDecodeError
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import pydantic
 import typer
@@ -9,16 +9,14 @@ from typer.colors import CYAN, GREEN, RED
 
 from frontman.download import download_concurrent
 from frontman.process import generate_file_list
-from frontman.result import Result, Status
+from frontman.result import ErrorResult, SuccessResult
 from frontman.schema import Manifest
 
 DEFAULT_MANIFEST = Path("./frontman.json")
 
-STATUS_STYLE = {
-    Status.OK: typer.style(f"{'OK':<5}", fg=GREEN, bold=True),
-    Status.SKIP: typer.style(f"{'SKIP':<5}", fg=CYAN, bold=True),
-    Status.ERROR: typer.style(f"{'ERR':<5}", fg=RED, bold=True),
-}
+STATUS_OK = typer.style(f"{'OK':<5}", fg=GREEN, bold=True)
+STATUS_SKIP = typer.style(f"{'SKIP':<5}", fg=CYAN, bold=True)
+STATUS_ERROR = typer.style(f"{'ERR':<5}", fg=RED, bold=True)
 
 app = typer.Typer(name="frontman")
 
@@ -28,20 +26,20 @@ def callback():
     """Frontend Dependency Manager"""
 
 
-def log_result(result: Result, workdir: Path):
+def log_result(result: Union[SuccessResult, ErrorResult], workdir: Path):
     current_dir = Path.cwd()
     src = result.source
-    dest = result.destination
 
-    if result.status == Status.ERROR:
+    if isinstance(result, ErrorResult):
+        status = STATUS_ERROR
         output = f"{src}: {result.error}"
     else:
+        status = STATUS_SKIP if result.skip else STATUS_OK
+        dest = result.destination
         if workdir == current_dir:
             output = f"{src} -> {dest.relative_to(workdir)}"
         else:
             output = f"{src} -> {dest}"
-
-    status = STATUS_STYLE[result.status]
 
     typer.echo(status + output)
 

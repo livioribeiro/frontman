@@ -41,7 +41,9 @@ def test_generate_file_list_invalid_package_file_type_should_fail():
     root_path = Path.cwd()
     package = Package(name="package", version="version", files=[])
     package.files.append(Path())
-    manifest = Manifest(provider=Provider.JSDELIVR, destination=root_path, packages=[package])
+    manifest = Manifest(
+        provider=Provider.JSDELIVR, destination=root_path, packages=[package]
+    )
 
     with pytest.raises(TypeError):
         next(generate_file_list(root_path, manifest))

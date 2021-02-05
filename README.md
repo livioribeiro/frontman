@@ -71,7 +71,7 @@ OK   https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js -> as
 OK   https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css -> assets/bootstrap/css/bootstrap.min.css
 ```
 
-## Forcing package download
+## Force package download
 
 By default, files that already have been downloaded will be skipped. To force download these files, use the `--force` (or `-f`) flag:
 

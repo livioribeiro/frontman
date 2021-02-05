@@ -5,11 +5,11 @@ import pytest
 import requests
 
 from frontman import download
-from frontman.result import Status
+from frontman.result import ErrorResult, SuccessResult
 
 
 def test_ensure_destination_single_dir(tmp_path: Path):
-    package_path = tmp_path / "package_path" / "package_file.js"
+    package_path = tmp_path / "package_path/package_file.js"
     assert not package_path.exists()
     assert not package_path.parent.exists()
 
@@ -19,7 +19,7 @@ def test_ensure_destination_single_dir(tmp_path: Path):
 
 
 def test_ensure_destination_multiple_dir(tmp_path: Path):
-    package_path = tmp_path / "package_path_1" / "package_path_2" / "package_file.js"
+    package_path = tmp_path / "package_path_1/package_path_2/package_file.js"
     assert not package_path.exists()
     assert not package_path.parent.exists()
     assert not package_path.parent.parent.exists()
@@ -31,7 +31,7 @@ def test_ensure_destination_multiple_dir(tmp_path: Path):
 
 
 def test_ensure_destination_dir_is_file_should_fail(tmp_path: Path):
-    package_path = tmp_path / "package_path" / "package_file.js"
+    package_path = tmp_path / "package_path/package_file.js"
     package_path.parent.touch()
     assert package_path.parent.is_file()
 
@@ -87,13 +87,9 @@ def _download_concurrent(tmp_path: Path, concurrency: Optional[int]):
         download.download_concurrent(zip(file_list, path_list), concurrency=concurrency)
     )
 
-    for p in path_list:
-        assert p.exists()
-
-    for r in results:
-        assert r.status == Status.OK
-
     for p, r in zip(path_list, results):
+        assert isinstance(r, SuccessResult)
+        assert p.exists()
         assert p == r.destination
 
 
@@ -113,11 +109,13 @@ def test_download_concurrent_skip(tmp_path: Path):
         )
     ]
 
-    result_new = next(download.download_concurrent(file_list))
-    assert result_new.status == Status.OK
+    result_new = next(iter(download.download_concurrent(file_list)))
+    assert isinstance(result_new, SuccessResult)
+    assert not result_new.skip
 
-    result_skip = next(download.download_concurrent(file_list))
-    assert result_skip.status == Status.SKIP
+    result_skip = next(iter(download.download_concurrent(file_list)))
+    assert isinstance(result_skip, SuccessResult)
+    assert result_skip.skip
 
 
 def test_download_concurrent_error(tmp_path: Path):
@@ -128,5 +126,5 @@ def test_download_concurrent_error(tmp_path: Path):
         )
     ]
 
-    result = next(download.download_concurrent(file_list))
-    assert result.status == Status.ERROR
+    result = next(iter(download.download_concurrent(file_list)))
+    assert isinstance(result, ErrorResult)

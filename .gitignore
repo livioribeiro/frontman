@@ -5,6 +5,9 @@ dist/
 .mypy_cache/
 .pytest_cache/
 .coverage
+htmlcov/
+junit/
+coverage.xml
 
 .idea/
 .vscode/
