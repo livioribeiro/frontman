@@ -1,11 +1,8 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from frontman.process import generate_file_list
-from frontman.provider import Provider
-from frontman.schema import Manifest, Package
+from frontman.schema import Manifest
 
 
 def test_generate_file_list():
@@ -35,15 +32,3 @@ def test_generate_file_list():
             root_path / "assets/bootstrap/css/bootstrap.min.css",
         ),
     }
-
-
-def test_generate_file_list_invalid_package_file_type_should_fail():
-    root_path = Path.cwd()
-    package = Package(name="package", version="version", files=[])
-    package.files.append(Path())
-    manifest = Manifest(
-        provider=Provider.JSDELIVR, destination=root_path, packages=[package]
-    )
-
-    with pytest.raises(TypeError):
-        next(generate_file_list(root_path, manifest))

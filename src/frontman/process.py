@@ -1,7 +1,22 @@
 from pathlib import Path
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Union
 
 from .schema import Manifest, PackageFile
+
+
+def _get_src_and_dest(
+    file: Union[str, PackageFile], destination: Path
+) -> Tuple[str, Path]:
+    if isinstance(file, str):
+        file_source = file
+        file_destination = destination / file
+    else:
+        file_source = file.name
+        file_destination = destination / file.destination / file.name
+        if file.rename is not None:
+            file_destination = file_destination.parent / file.rename
+
+    return file_source, file_destination
 
 
 def generate_file_list(
@@ -17,16 +32,7 @@ def generate_file_list(
         version = package.version
 
         for file in package.files:
-            if isinstance(file, str):
-                file_source = file
-                file_destination = destination / file
-            elif isinstance(file, PackageFile):
-                file_source = file.name
-                file_destination = destination / file.destination / file.name
-                if file.rename is not None:
-                    file_destination = file_destination.parent / file.rename
-            else:
-                raise TypeError("invalid package file type")
+            file_source, file_destination = _get_src_and_dest(file, destination)
 
             if package.path is not None:
                 file_source = str(package.path / file_source)
