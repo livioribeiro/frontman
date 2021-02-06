@@ -23,17 +23,17 @@ jobs:
     - name: Install Poetry
       run: |
         pip install --upgrade pip
-        pip install --user poetry
+        pip install poetry
     - name: Install Dependencies
       run: |
-        python -m poetry config virtualenvs.create false
-        python -m poetry install
+        poetry virtualenvs.in-project
+        poetry install
     - name: Lint with flake8
       run: |
-        python -m poetry run flake8 . --count --exit-zero --max-complexity=10 --statistics
+        poetry run flake8 . --count --exit-zero --max-complexity=10 --statistics
     - name: Lint with MyPy
       run: |
-        python -m poetry run mypy .
+        poetry run mypy .
     - name: Test with pytest
       run: |
-        python -m poetry run pytest
+        poetry run pytest
