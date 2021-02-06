@@ -97,11 +97,14 @@ def test_invalid_package_should_fail(tmp_path: Path):
 
 def test_invoke_from_python_m():
     import subprocess
+    import sys
 
-    result = subprocess.run(
-        ["python", "-m", "frontman", "install", "--help"],
-        capture_output=True,
-    )
+    if sys.version_info > (3, 6):
+        kwargs = dict(capture_output=True)
+    else:
+        kwargs = dict(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    result = subprocess.run(["python", "-m", "frontman", "install", "--help"], **kwargs)
 
     assert result.returncode == 0
     assert "Usage: frontman install [OPTIONS] [MANIFEST_PATH]" in result.stdout.decode()
