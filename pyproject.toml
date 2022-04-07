@@ -12,17 +12,17 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.6"
-requests = "^2.25.1"
-pydantic = "^1.7.3"
-typer = { version = "^0.3.2", extras = ["all"] }
+requests = "^2.27.1"
+pydantic = "^1.7.4"
+typer = { version = "^0.4.1", extras = ["all"] }
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.2"
-pytest-cov = "^2.11.1"
+pytest = "^7.0.1"
+pytest-cov = "^3.0.0"
 black = "^20.8b1"
-isort = "^5.7.0"
-flake8 = "^3.8.4"
-mypy = "^0.800"
+isort = "^5.8.0"
+flake8 = "^4.0.1"
+mypy = "^0.942"
 
 [tool.poetry.scripts]
 frontman = 'frontman.main:app'
