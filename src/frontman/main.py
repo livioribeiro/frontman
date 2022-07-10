@@ -105,6 +105,7 @@ def install(
         raise typer.Exit(code=1)
     except pydantic.ValidationError:
         typer.echo("Error: Manifest is not in expected format", err=True)
+        typer.echo(e.json(), err=True)
         raise typer.Exit(code=1)
 
     file_list = generate_file_list(workdir, manifest)
