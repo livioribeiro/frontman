@@ -27,6 +27,7 @@ black = "^22.6.0"
 isort = "^5.10.1"
 flake8 = "^4.0.1"
 mypy = "^0.961"
+types-requests = "^2.28.0"
 
 [tool.poetry.scripts]
 frontman = 'frontman.main:app'
