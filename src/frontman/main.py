@@ -103,7 +103,7 @@ def install(
     except JSONDecodeError:
         typer.echo("Error: Manifest contains invalid JSON", err=True)
         raise typer.Exit(code=1)
-    except pydantic.ValidationError:
+    except pydantic.ValidationError as e:
         typer.echo("Error: Manifest is not in expected format", err=True)
         typer.echo(e.json(), err=True)
         raise typer.Exit(code=1)
