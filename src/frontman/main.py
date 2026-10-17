@@ -1,4 +1,5 @@
 import json
+import math
 from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Optional, Union
@@ -7,7 +8,7 @@ import pydantic
 import typer
 from typer.colors import CYAN, GREEN, RED
 
-from frontman.download import download_concurrent
+from frontman.download import DEFAULT_TIMEOUT, download_concurrent
 from frontman.process import generate_file_list
 from frontman.result import ErrorResult, SuccessResult
 from frontman.schema import Manifest
@@ -68,6 +69,13 @@ def workdir_callback(value: Optional[Path]):
     return value or Path.cwd()
 
 
+def timeout_callback(value: float):
+    if not math.isfinite(value) or value <= 0:
+        raise typer.BadParameter("Timeout must be a finite number greater than 0.")
+
+    return value
+
+
 @app.command(name="install")
 def install(
     manifest_path: Path = typer.Argument(
@@ -96,6 +104,12 @@ def install(
         help="Download packages relative to the given directory",
         callback=workdir_callback,
     ),
+    timeout: float = typer.Option(
+        DEFAULT_TIMEOUT,
+        "--timeout",
+        help="Connect/read timeout in seconds, not a total download time limit.",
+        callback=timeout_callback,
+    ),
 ):
     try:
         manifest_data = json.loads(manifest_path.read_text())
@@ -110,5 +124,5 @@ def install(
 
     file_list = generate_file_list(workdir, manifest)
 
-    for result in download_concurrent(file_list, force, concurrency):
+    for result in download_concurrent(file_list, force, concurrency, timeout=timeout):
         log_result(result, workdir)

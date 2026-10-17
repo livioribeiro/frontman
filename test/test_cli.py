@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
+from unittest.mock import Mock
 
+import pytest
+import requests
 from typer.testing import CliRunner
 
 from frontman.main import app
@@ -105,3 +108,43 @@ def test_invoke_from_python_m():
 
     assert result.returncode == 0
     assert "Usage: frontman install [OPTIONS] [MANIFEST_PATH]" in result.stdout.decode()
+
+
+@pytest.mark.parametrize(
+    "arguments, expected_timeout", [([], 30.0), (["--timeout", "2.5"], 2.5)]
+)
+def test_timeout_option_reaches_downloader(monkeypatch, arguments, expected_timeout):
+    downloader = Mock(return_value=iter(()))
+    monkeypatch.setattr("frontman.main.download_concurrent", downloader)
+
+    result = runner.invoke(app, ["install", str(MANIFEST_OK)] + arguments)
+
+    assert result.exit_code == 0, result.output
+    assert downloader.call_count == 1
+    assert downloader.call_args[1]["timeout"] == expected_timeout
+
+
+@pytest.mark.parametrize("timeout", ["0", "-1", "nan", "inf", "-inf", "invalid"])
+def test_invalid_timeout_is_rejected(monkeypatch, timeout):
+    downloader = Mock()
+    monkeypatch.setattr("frontman.main.download_concurrent", downloader)
+
+    result = runner.invoke(app, ["install", str(MANIFEST_OK), "--timeout", timeout])
+
+    assert result.exit_code == 2
+    assert "--timeout" in result.output
+    downloader.assert_not_called()
+
+
+def test_timeout_is_reported_as_download_error(tmp_path, monkeypatch):
+    request = Mock(side_effect=requests.ReadTimeout("Read timed out"))
+    monkeypatch.setattr(requests.Session, "get", request)
+
+    result = runner.invoke(
+        app, ["install", str(MANIFEST_OK), "-w", str(tmp_path), "--timeout", "0.5"]
+    )
+
+    assert result.output.count("ERR") == 4
+    assert result.output.count("Read timed out") == 4
+    assert request.call_count == 4
+    assert all(item[1]["timeout"] == 0.5 for item in request.call_args_list)

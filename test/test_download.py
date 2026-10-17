@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Optional
+from unittest.mock import Mock, call
 
 import pytest
 import requests
@@ -128,3 +129,62 @@ def test_download_concurrent_error(tmp_path: Path):
 
     result = next(iter(download.download_concurrent(file_list)))
     assert isinstance(result, ErrorResult)
+
+
+@pytest.mark.parametrize("use_session", [False, True])
+@pytest.mark.parametrize("timeout", [None, 2.5])
+def test_download_file_passes_timeout(tmp_path, monkeypatch, use_session, timeout):
+    source = "https://example.com/asset.js"
+    destination = tmp_path / "asset.js"
+    response = Mock(content=b"asset content")
+    request = Mock(return_value=response)
+    session = requests.Session() if use_session else None
+    monkeypatch.setattr(session if use_session else requests, "get", request)
+    options = {} if timeout is None else {"timeout": timeout}
+
+    download.download_file(source, destination, session, **options)
+
+    request.assert_called_once_with(
+        source, timeout=30.0 if timeout is None else timeout
+    )
+    response.raise_for_status.assert_called_once_with()
+    assert destination.read_bytes() == b"asset content"
+
+
+@pytest.mark.parametrize("timeout", [None, 1.25])
+@pytest.mark.parametrize("error_type", [requests.ConnectTimeout, requests.ReadTimeout])
+def test_concurrent_timeout_preserves_other_results(
+    tmp_path, monkeypatch, timeout, error_type
+):
+    failed_source = "https://example.com/timeout.js"
+    successful_source = "https://example.com/success.js"
+    failed_destination = tmp_path / "timeout.js"
+    successful_destination = tmp_path / "success.js"
+    timeout_error = error_type("Request timed out")
+    session = Mock(spec=requests.Session)
+    session.get.side_effect = [timeout_error, Mock(content=b"downloaded")]
+    monkeypatch.setattr(requests, "Session", Mock(return_value=session))
+    options = {} if timeout is None else {"timeout": timeout}
+
+    results = list(
+        download.download_concurrent(
+            [
+                (failed_source, failed_destination),
+                (successful_source, successful_destination),
+            ],
+            concurrency=1,
+            **options,
+        )
+    )
+
+    expected_timeout = 30.0 if timeout is None else timeout
+    assert session.get.call_args_list == [
+        call(failed_source, timeout=expected_timeout),
+        call(successful_source, timeout=expected_timeout),
+    ]
+    assert results == [
+        ErrorResult(failed_source, timeout_error),
+        SuccessResult(successful_source, successful_destination),
+    ]
+    assert not failed_destination.exists()
+    assert successful_destination.read_bytes() == b"downloaded"

@@ -79,6 +79,21 @@ By default, files that already have been downloaded will be skipped. To force do
 frontman install --force
 ```
 
+## Download timeout
+
+HTTP requests use a 30-second timeout by default. To set a different positive,
+finite value (in seconds), use `--timeout`:
+
+```sh
+frontman install --timeout 10
+```
+
+Fractional values such as `--timeout 0.5` are also accepted. The value applies to
+both connection waits and read inactivity, not the total duration of a download.
+Requests may try multiple addresses, so the overall connection time can exceed
+this value. A timeout is reported as a per-file download error; other download
+results are still reported.
+
 ## Manifest Format
 
 **provider**: The server we will download the files from. It can be `cdnjs`, `jsdelivr` or `unpkg`.
