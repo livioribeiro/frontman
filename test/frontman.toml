@@ -1,0 +1,30 @@
+[project]
+name = "example"
+
+[tool.other]
+enabled = true
+
+[tool.frontman]
+provider = "jsdelivr"
+destination = "assets"
+
+[[tool.frontman.packages]]
+name = "jquery"
+version = "3.5.1"
+provider = "cdnjs"
+files = [{ name = "jquery.min.js", destination = "jquery" }]
+
+[[tool.frontman.packages]]
+name = "@popperjs/core"
+version = "2.6.0"
+path = "dist/umd"
+destination = "popper"
+files = [{ name = "popper.min.js", rename = "popper.js" }]
+
+[[tool.frontman.packages]]
+name = "bootstrap"
+version = "4.6.0"
+provider = "unpkg"
+path = "dist"
+destination = "bootstrap"
+files = ["js/bootstrap.min.js", "css/bootstrap.min.css"]

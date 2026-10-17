@@ -1,4 +1,5 @@
 import json
+import sys
 from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Optional, Union
@@ -11,6 +12,11 @@ from frontman.download import download_concurrent
 from frontman.process import generate_file_list
 from frontman.result import ErrorResult, SuccessResult
 from frontman.schema import Manifest
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 DEFAULT_MANIFEST = Path("./frontman.json")
 
@@ -51,10 +57,10 @@ def manifest_callback(value: Path):
     if not value.is_file():
         raise typer.BadParameter(f"Given manifest '{value}' must be a file.")
 
-    if not value.name.endswith(".json"):
-        raise typer.BadParameter("Manifest must be in JSON format.")
+    if value.suffix not in (".json", ".toml"):
+        raise typer.BadParameter("Manifest must be in JSON or TOML format.")
 
-    return value.resolve()
+    return value.absolute()
 
 
 def concurrency_callback(value: Optional[int]):
@@ -72,7 +78,7 @@ def workdir_callback(value: Optional[Path]):
 def install(
     manifest_path: Path = typer.Argument(
         DEFAULT_MANIFEST,
-        help="Path to manifest file",
+        help="Path to JSON manifest or TOML file containing [tool.frontman]",
         callback=manifest_callback,
     ),
     concurrency: Optional[int] = typer.Option(
@@ -98,10 +104,23 @@ def install(
     ),
 ):
     try:
-        manifest_data = json.loads(manifest_path.read_text())
+        if manifest_path.suffix == ".toml":
+            document = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+            tool = document.get("tool", {})
+            if not isinstance(tool, dict) or not isinstance(tool.get("frontman"), dict):
+                typer.echo(
+                    "Error: Manifest must contain a [tool.frontman] table", err=True
+                )
+                raise typer.Exit(code=1)
+            manifest_data = tool["frontman"]
+        else:
+            manifest_data = json.loads(manifest_path.read_text())
         manifest = Manifest.parse_obj(manifest_data)
     except JSONDecodeError:
         typer.echo("Error: Manifest contains invalid JSON", err=True)
+        raise typer.Exit(code=1)
+    except tomllib.TOMLDecodeError:
+        typer.echo("Error: Manifest contains invalid TOML", err=True)
         raise typer.Exit(code=1)
     except pydantic.ValidationError as e:
         typer.echo("Error: Manifest is not in expected format", err=True)

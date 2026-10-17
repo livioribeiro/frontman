@@ -71,6 +71,51 @@ OK   https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js -> as
 OK   https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css -> assets/bootstrap/css/bootstrap.min.css
 ```
 
+## Configuration in pyproject.toml
+
+Alternatively, put the same manifest fields under `[tool.frontman]` in your
+`pyproject.toml`:
+
+```toml
+[tool.frontman]
+provider = "jsdelivr"
+destination = "assets"
+
+[[tool.frontman.packages]]
+name = "jquery"
+version = "3.5.1"
+provider = "cdnjs"
+files = [{ name = "jquery.min.js", destination = "jquery" }]
+
+[[tool.frontman.packages]]
+name = "@popperjs/core"
+version = "2.6.0"
+path = "dist/umd"
+destination = "popper"
+files = [{ name = "popper.min.js", rename = "popper.js" }]
+
+[[tool.frontman.packages]]
+name = "bootstrap"
+version = "4.6.0"
+path = "dist"
+destination = "bootstrap"
+files = ["js/bootstrap.min.js", "css/bootstrap.min.css"]
+```
+
+Select the TOML file explicitly:
+
+```sh
+frontman install pyproject.toml
+```
+
+Other `.toml` filenames are also accepted, using the same `[tool.frontman]` table.
+Unrelated project and tool tables are ignored.
+`frontman install` still defaults to `frontman.json`; TOML files are not
+automatically discovered or merged with JSON configuration.
+Both formats use the same manifest schema and download behavior.
+Download destinations remain relative to the current working directory, or the
+directory selected with `--workdir`, rather than the manifest's location.
+
 ## Force package download
 
 By default, files that already have been downloaded will be skipped. To force download these files, use the `--force` (or `-f`) flag:
