@@ -110,5 +110,11 @@ def install(
 
     file_list = generate_file_list(workdir, manifest)
 
+    has_errors = False
     for result in download_concurrent(file_list, force, concurrency):
         log_result(result, workdir)
+        if isinstance(result, ErrorResult):
+            has_errors = True
+
+    if has_errors:
+        raise typer.Exit(code=1)

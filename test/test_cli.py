@@ -1,9 +1,11 @@
 import os
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from frontman.main import app
+from frontman.result import ErrorResult, SuccessResult
 
 runner = CliRunner()
 
@@ -92,6 +94,7 @@ def test_negative_concurrency_value_should_fail():
 
 def test_invalid_package_should_fail(tmp_path: Path):
     result = runner.invoke(app, f"install {MANIFEST_INVALID_PACKAGE} -w {tmp_path}")
+    assert result.exit_code == 1
     assert "ERR" in result.stdout
 
 
@@ -105,3 +108,42 @@ def test_invoke_from_python_m():
 
     assert result.returncode == 0
     assert "Usage: frontman install [OPTIONS] [MANIFEST_PATH]" in result.stdout.decode()
+
+
+@pytest.mark.parametrize(
+    "statuses, expected_exit_code",
+    [
+        ([], 0),
+        (["OK", "OK"], 0),
+        (["SKIP", "SKIP"], 0),
+        (["OK", "SKIP"], 0),
+        (["ERR", "ERR"], 1),
+        (["ERR", "OK", "SKIP"], 1),
+        (["OK", "ERR", "SKIP"], 1),
+        (["SKIP", "OK", "ERR"], 1),
+    ],
+)
+def test_install_reports_all_results_and_sets_exit_status(
+    tmp_path, monkeypatch, statuses, expected_exit_code
+):
+    results = []
+    expected_lines = []
+    for index, status in enumerate(statuses):
+        source = f"https://example.com/asset-{index}.js"
+        destination = tmp_path / f"asset-{index}.js"
+        if status == "ERR":
+            error = OSError(f"Download {index} failed")
+            results.append(ErrorResult(source, error))
+            expected_lines.append(f"{status:<5}{source}: {error}")
+        else:
+            results.append(SuccessResult(source, destination, skip=status == "SKIP"))
+            expected_lines.append(f"{status:<5}{source} -> {destination}")
+
+    monkeypatch.setattr(
+        "frontman.main.download_concurrent", lambda *args: iter(results)
+    )
+
+    result = runner.invoke(app, ["install", str(MANIFEST_OK), "-w", str(tmp_path)])
+
+    assert result.stdout.splitlines() == expected_lines
+    assert result.exit_code == expected_exit_code

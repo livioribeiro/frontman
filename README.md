@@ -71,6 +71,10 @@ OK   https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js -> as
 OK   https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css -> assets/bootstrap/css/bootstrap.min.css
 ```
 
+`frontman install` reports all download results before exiting. If any download
+fails, it exits with status 1; successful and skipped downloads do not cause a
+failure exit status.
+
 ## Force package download
 
 By default, files that already have been downloaded will be skipped. To force download these files, use the `--force` (or `-f`) flag:
